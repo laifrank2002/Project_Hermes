@@ -1,0 +1,12 @@
+
+03-05-2019, Alpha 0.01
+The firms update!
+	- overhauled entire economic system
+		- added moolah (money)
+		- added firms
+		- now pops are employed in firms
+		- and each firm is the one that produces
+		- and we can also produce partially without full upkeep
+		- added in auto-updating HTML tables for goods (and services)
+		- also supply, demand, and sold as groundwork for later price series
+	- revamped data storage for population

@@ -1,0 +1,51 @@
+<html>
+<head>
+	<script src="script.js"></script>
+	<script src="renderer.js"></script>
+	<script src="person.js"></script>
+	<script src="firm.js"></script>
+	<script>
+		window.onload = function()
+		{
+			Game.initialize();
+			Game.pass_time_and_log(1);
+			
+			setInterval(Game.tick,100);
+			setInterval(Game.update,100);
+		}
+	</script>
+	<style>
+		#population_display {
+			width: 400px;
+		}
+		
+		#goods_display {
+			
+		}
+		
+		#inspector_display {
+			
+		}
+		
+		.display {
+			border: 1px solid grey;
+			padding: 20px;
+		}
+	</style>
+</head>
+<body>
+	<!-- UI -->
+	<div>
+		<div id = "population_display" class="display">
+			<canvas id = "population_pyramid">Your browser does not support the canvas element.</canvas>
+		</div>
+		<div id = "goods_display" class="display">
+		</div>
+		<div id = "firms_display" class="display">
+		</div>
+		<div id = "inspector_display" class="display">
+		
+		</div>
+	</div>
+</body>
+</html>
