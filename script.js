@@ -11,6 +11,8 @@ var Game = (
 		var agents = data["agents"];
 		data["goods"] = {};
 		data["statistics"] = {};
+		// history 
+		
 		// resources - yes, it is another huge array
 		var resources = [];
 		
@@ -37,7 +39,7 @@ var Game = (
 		var UI_goods_table_head;
 		var UI_goods_table_head_row;
 		var UI_goods_table_head_headers = [];
-		var UI_goods_table_head_headers_text = ["Good","Number","Demand","Supply","Sold"];
+		var UI_goods_table_head_headers_text = ["Good","Number","Price","Demand","Supply","Sold"];
 		var UI_goods_table_body;
 		var UI_goods_table_body_row = [];
 		var UI_goods_table_body_row_cells = [];
@@ -114,6 +116,10 @@ var Game = (
 				UI_goods_table_body_row_cells[index][4] = document.createElement("td");
 				UI_goods_table_body_row_cells[index][4].innerHTML = "0";
 				UI_goods_table_body_row[index].appendChild(UI_goods_table_body_row_cells[index][4]);
+				
+				UI_goods_table_body_row_cells[index][5] = document.createElement("td");
+				UI_goods_table_body_row_cells[index][5].innerHTML = "0";
+				UI_goods_table_body_row[index].appendChild(UI_goods_table_body_row_cells[index][5]);
 				
 				UI_goods_table_body.appendChild(UI_goods_table_body_row[index]);
 				index++;
@@ -203,6 +209,10 @@ var Game = (
 					};
 				}
 				
+				// history 
+				data["statistics"]["history"] = {};
+				data["statistics"]["history"]["population"] = [];
+				
 				// then was created man (and woman!)
 				var population = [];
 				for(var index = 0; index < 500; index++)
@@ -228,6 +238,12 @@ var Game = (
 				
 				// then was created firms 
 				data["agents"]["firms"] = [];
+				for(var index = 0; index < 2; index++)
+				{
+					var type = "hunting_camp";
+					var firm = new Firm(type);
+					data["agents"]["firms"].push(firm);
+				}
 				for(var index = 0; index < 5; index++)
 				{
 					var type = "farm";
@@ -260,6 +276,14 @@ var Game = (
 			
 			tick: function(lapse)
 			{
+				// yearly updates
+				if(time.day%365 === 0)
+				{
+					var datum = {"time":time.day/365,"population":data["agents"]["population"].length};
+					data["statistics"]["history"]["population"].push(datum);
+					// send it direct to be processed 
+					Renderer.receive_population_growth_data(datum);
+				}
 				// reset market supply 'n' demand 
 				for(var key in data["goods"])
 				{
@@ -267,6 +291,12 @@ var Game = (
 					good.supply = 0;
 					good.demand = 0;
 					good.sold = 0;
+					
+					// IFF it's NaN, reset 
+					if(isNaN(good.count))
+					{
+						good.count = 0;
+					}
 				}
 				
 				// each firm, start producing!
@@ -303,6 +333,8 @@ var Game = (
 						if(person.age >= 18 && person.gender === "m")
 						{
 							person.active = true;
+							// also, try being a BUSINESS OWNER!
+							person.start_new_firm(agents["firms"],firm_profit_brackets);
 						}
 						else 
 						{
@@ -359,11 +391,19 @@ var Game = (
 					firm_profit_brackets[firm.type].count += 1;
 					firm_profit_brackets[firm.type].total_size += firm.size;
 				});
+				agents["firms"] = agents["firms"].filter(firm => !firm.dead);
 				// thence divide to average 
 				for(var key in firm_list)
 				{
-					firm_profit_brackets[key].profit = firm_profit_brackets[key].profit/firm_profit_brackets[key].count;
+					firm_profit_brackets[key].profit = firm_profit_brackets[key].profit/firm_profit_brackets[key].total_size;
 					if(firm_profit_brackets[key].count === 0) firm_profit_brackets[key].profit = 0;
+				}
+				
+				// and now we calculate the new real price
+				for(var key in data["goods"])
+				{
+					var good = data["goods"][key];
+					good.price = goods_list[key]["base_price"] * ((good.demand+1)/(good.supply+1));
 				}
 				// Game.update();
 				time.day++;
@@ -415,22 +455,23 @@ var Game = (
 				UI_population_total.innerHTML = "Total population: " + agents["population"].length;
 				UI_population_actives.innerHTML = "Actives: " + actives;
 				UI_population_unemployed.innerHTML = "Unemployed: " + unemployed_count;
-				UI_population_unemployment_rate.innerHTML = "Unemployment rate: " + ((1 - unemployed_count/actives) * 100).toFixed(2) + "%";
+				UI_population_unemployment_rate.innerHTML = "Unemployment rate: " + ((unemployed_count/actives) * 100).toFixed(2) + "%";
 				var index = 0;
 				for(var key in goods_list)
 				{
 					UI_goods_table_body_row_cells[index][1].innerHTML = data["goods"][key].count.toFixed(2);					
-					UI_goods_table_body_row_cells[index][2].innerHTML = data["goods"][key].demand.toFixed(2);					
-					UI_goods_table_body_row_cells[index][3].innerHTML = data["goods"][key].supply.toFixed(2);
-					UI_goods_table_body_row_cells[index][4].innerHTML = data["goods"][key].sold.toFixed(2);
+					UI_goods_table_body_row_cells[index][2].innerHTML = data["goods"][key].price.toFixed(2);					
+					UI_goods_table_body_row_cells[index][3].innerHTML = data["goods"][key].demand.toFixed(2);					
+					UI_goods_table_body_row_cells[index][4].innerHTML = data["goods"][key].supply.toFixed(2);
+					UI_goods_table_body_row_cells[index][5].innerHTML = data["goods"][key].sold.toFixed(2);
 					index++;
 				}
 				
 				var index = 0;
 				for(var key in firm_profit_brackets)
 				{
-					UI_firms_table_body_row_cells[index][1].innerHTML = firm_profit_brackets[key].count.toFixed(0);					
-					UI_firms_table_body_row_cells[index][2].innerHTML = firm_profit_brackets[key].total_size.toFixed(0);					
+					UI_firms_table_body_row_cells[index][1].innerHTML = firm_profit_brackets[key].count.toFixed(0);
+					UI_firms_table_body_row_cells[index][2].innerHTML = firm_profit_brackets[key].total_size.toFixed(0);
 					UI_firms_table_body_row_cells[index][3].innerHTML = firm_profit_brackets[key].profit.toFixed(2);					
 					index++;
 				}
@@ -477,8 +518,8 @@ var Game = (
 			distribute_money: function(amount)
 			{
 				// lottery!
-				var number = Math.floor*(Math.random() * agents["population"].length);
-				population[number].money += amount;
+				var number = Math.floor(Math.random() * agents["population"].length);
+				agents["population"][number].money += amount;
 			},
 			
 			pass_time_and_log: function(time)
@@ -493,21 +534,6 @@ var Game = (
 
 // constants
 
-var goods_list = {
-	"grain" : {
-		"type": "raw",
-		"base_price": 0.5,
-	},
-	"flour": {
-		"type": "processed",
-		"base_price": 0.8,
-	},
-	"bread":{
-		"type": "food",
-		"base_price": 5,
-	},
-	
-}
 
 // utils 
 var randomProperty = function (object) {

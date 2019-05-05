@@ -4,6 +4,11 @@
 	<script src="renderer.js"></script>
 	<script src="person.js"></script>
 	<script src="firm.js"></script>
+	<script src="goods.js"></script>
+	
+	<script src="JS_grapher/graph.js"></script>
+	<script src="JS_grapher/table.js"></script>
+	
 	<script>
 		window.onload = function()
 		{
@@ -15,16 +20,21 @@
 		}
 	</script>
 	<style>
+		
+		#population_growth {
+			float: right;
+		}
+		/*
 		#population_display {
-			width: 400px;
+			width: 800px;
+			float: left;
 		}
-		
-		#goods_display {
-			
-		}
-		
+		*/
 		#inspector_display {
-			
+		}
+		
+		#main_interface {
+			/*min-height: 560px;*/
 		}
 		
 		.display {
@@ -36,16 +46,25 @@
 <body>
 	<!-- UI -->
 	<div>
-		<div id = "population_display" class="display">
-			<canvas id = "population_pyramid">Your browser does not support the canvas element.</canvas>
-		</div>
-		<div id = "goods_display" class="display">
-		</div>
-		<div id = "firms_display" class="display">
+		<h1>Hermes</h1>
+		
+		<div id = "main_interface">
+			<div id = "population_display" class="display">
+				<canvas id = "population_pyramid">Your browser does not support the canvas element.</canvas>
+				<canvas id = "population_growth">Your browser does not support the canvas element.</canvas>
+			</div>
+			
 		</div>
 		<div id = "inspector_display" class="display">
-		
+			</div>
+		<div id="statistic_tables">
+			<div id = "goods_display" class="display">
+			</div>
+			<div id = "firms_display" class="display">
+			</div>
 		</div>
+		
+		
 	</div>
 </body>
 </html>

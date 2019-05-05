@@ -18,7 +18,7 @@ function Firm(type)
 	
 	
 	this.size = 1;
-	this.budget = 0;
+	this.budget = 100; // starting capital
 	
 	this.revenue = 0;
 	this.expenses = 0;
@@ -37,7 +37,7 @@ Firm.prototype.BASE_COST = 100;
 
 Firm.prototype.expand = function()
 {
-	var cost = this.BASE_COST * Math.sqrt(this.size);
+	var cost = this.BASE_COST * (this.size);
 	if(this.budget >= cost)
 	{
 		this.budget -= cost;
@@ -56,13 +56,33 @@ Firm.prototype.expand = function()
 Firm.prototype.downsize = function()
 {
 	this.size -= 1;
-	
 	var jobs_to_be_added = firm_list[this.type]["jobs"];
 	for(var key in jobs_to_be_added)
 	{
 		this.jobs[key]["max"] -= jobs_to_be_added[key];
 		this.max_employees -= jobs_to_be_added[key];
-	}	
+	}
+	// autofire above cap 
+	for(var key in jobs_to_be_added)
+	{
+
+		for(var index = 0; index < this.employee_count; index++)
+		{
+			if(this.jobs[key]["max"] > this.jobs[key]["hired"])
+			{
+				// fire target employees
+				if(this.employees[index].job === key)
+				{
+					this.fire(this.employees[index]);
+				}
+			}
+			else 
+			{
+				break;
+			}
+		}
+		
+	}
 	if(this.size < 1) this.bankrupt();
 }
 
@@ -70,8 +90,7 @@ Firm.prototype.bankrupt = function()
 {
 	this.dead = true;
 	this.employees.forEach(employee => this.fire(employee));
-	if(budget > 0 && this.owner) this.owner.money += this.budget;
-	
+	if(this.budget > 0 && this.owner) this.owner.money += this.budget;
 }
 // beginning of the tick, the production cycle!
 Firm.prototype.produce = function(resources)
@@ -82,7 +101,8 @@ Firm.prototype.produce = function(resources)
 		this.produced[key] = 0;
 	}
 	this.revenue = 0;
-	this.expenses = 0;
+	// expenses are equal to the firms' size to prevent huge firms having too many unused employees
+	this.expenses = this.size;
 	// aggregate jobs 
 	for(var key in this.jobs)
 	{
@@ -137,6 +157,11 @@ Firm.prototype.resolve_accounts = function()
 	{
 		this.employees.forEach(employee => employee.money += share_employee/this.max_employees);
 	}
+	else 
+	{
+		// the company eats up the cost 
+		this.budget += share_employee;
+	}
 	if(this.owner)
 	{
 		this.owner.money += this.owner_salary;
@@ -148,6 +173,15 @@ Firm.prototype.resolve_accounts = function()
 		this.budget += share_firm;
 	}
 	
+	// thence occassionally, by chance and if profitable, expand!
+	if(this.profit > 0 && Math.random() < 0.1)
+	{
+		this.expand();
+	}
+	else if(this.profit < 0 && this.budget < 100 && Math.random() < 0.05)
+	{
+		this.downsize();
+	}
 }
 
 Firm.prototype.has_opening = function()
@@ -178,12 +212,16 @@ Firm.prototype.fire = function(person)
 	this.employees = this.employees.filter(employee => employee != person);
 	for (var key in this.jobs)
 	{
-		var job = this.jobs[key];
-		if(job["hired"] > 0)
+		if(key === person.job)
 		{
-			job["hired"]--;
-			person.job = null;
-			break;
+			var job = this.jobs[key];
+			if(job["hired"] > 0)
+			{
+				job["hired"]--;
+				person.job = null;
+				person.employer = null;
+				break;
+			}
 		}
 	}
 }
@@ -194,6 +232,12 @@ var firm_list = {
 	},
 	"bakery": {
 		"jobs": {"baker":2},
+	},
+	"hunting_camp": {
+		"jobs": {"hunter": 3},
+	},
+	"brewery": {
+		"jobs": {"brewer": 2},
 	},
 }
 
@@ -209,5 +253,12 @@ var job_list = {
 	"baker":{
 		"produce": {"bread":0.4},
 		"upkeep": {"flour":0.5},
+	},
+	"hunter":{
+		"produce": {"meat":0.4},
+	},
+	"brewer":{
+		"produce": {"beer": 0.8},
+		"upkeep": {"grain": 0.2},
 	},
 }
